@@ -19,14 +19,14 @@ const ENABLE_THINKING = true;
 
 // When Janitor AI sends "gpt-4o", your proxy swaps it for the NVIDIA model on the right.
 // Update these to whatever models are currently available on build.nvidia.com
-const MODEL_MAP = {
-"gpt-3.5-turbo": "z-ai/glm5",
-"gpt-4": "moonshotai/kimi-k2.5",
-"gpt-4-turbo": "qwen/qwen3.5-397b-a17b",
-"gpt-4o": "z-ai/glm5",
-"claude-3-opus": "moonshotai/kimi-k2.5",
-"claude-3-sonnet": "qwen/qwen3.5-397b-a17b",
-"gemini-pro": "z-ai/glm5",
+{
+  "gpt-3.5-turbo": "z-ai/glm5",
+  "gpt-4": "moonshotai/kimi-k2.5",
+  "gpt-4-turbo": "qwen/qwen3.5-397b-a17b",
+  "gpt-4o": "z-ai/glm5",
+  "claude-3-opus": "moonshotai/kimi-k2.5",
+  "claude-3-sonnet": "qwen/qwen3.5-397b-a17b",
+  "gemini-pro": "z-ai/glm5"
 };
 
 // Fallback: if the model name isn't in the map, pick one based on keywords
