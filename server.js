@@ -17,17 +17,16 @@ const NIM_API_KEY = process.env.NIM_API_KEY;
 const SHOW_REASONING = false;
 const ENABLE_THINKING = true;
 
-// When Janitor AI sends "gpt-4o", your proxy swaps it for the NVIDIA model on the right.
-// Update these to whatever models are currently available on build.nvidia.com
+
 const MODEL_MAP = {
-  "gpt-3.5-turbo": "z-ai/glm5",
-  "gpt-4": "moonshotai/kimi-k2.5",
-  "gpt-4-turbo": "qwen/qwen3.5-397b-a17b",
-  "gpt-4o": "z-ai/glm5",
-  "claude-3-opus": "moonshotai/kimi-k2.5",
-  "claude-3-sonnet": "qwen/qwen3.5-397b-a17b",
-  "gemini-pro": "z-ai/glm5",
+  "GLM 5": "z-ai/glm5",
+  "Kimi K2.5": "moonshotai/kimi-k2.5",
+  "Qwen 3.5 397B": "qwen/qwen3.5-397b-a17b",
+  "Step 3.5 Fun": "stepfun-ai/step-3.5_flash",
+  "GLM 4.7": "z-ai/glm4.7",
+  "DeepSeek V3.2": "deepseek-ai/deepseek-v3.2",
 };
+
 
 // Fallback: if the model name isn't in the map, pick one based on keywords
 function resolveFallback(name) {
