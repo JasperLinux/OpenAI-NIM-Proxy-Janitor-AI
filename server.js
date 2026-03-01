@@ -13,47 +13,24 @@ const NIM_API_BASE =
   process.env.NIM_API_BASE || "https://integrate.api.nvidia.com/v1";
 const NIM_API_KEY = process.env.NIM_API_KEY;
 
-// Change these to true if you want reasoning/thinking features
 const SHOW_REASONING = false;
 const ENABLE_THINKING = true;
-
 
 const MODEL_MAP = {
   "GLM 5": "z-ai/glm5",
   "Kimi K2.5": "moonshotai/kimi-k2.5",
   "Qwen 3.5 397B": "qwen/qwen3.5-397b-a17b",
-  "Step 3.5 Fun": "stepfun-ai/step-3.5_flash",
+  "Step 3.5 Fun": "stepfun-ai/step-3.5-flash",
   "GLM 4.7": "z-ai/glm4.7",
   "DeepSeek V3.2": "deepseek-ai/deepseek-v3.2",
 };
 
-
-// Fallback: if the model name isn't in the map, pick one based on keywords
-function resolveFallback(name) {
-  const lower = name.toLowerCase();
-  if (
-    lower.includes("gpt-4") ||
-    lower.includes("opus") ||
-    lower.includes("405b")
-  )
-    return "meta/llama-3.1-405b-instruct";
-  if (
-    lower.includes("claude") ||
-    lower.includes("gemini") ||
-    lower.includes("70b")
-  )
-    return "meta/llama-3.1-70b-instruct";
-  return "meta/llama-3.1-8b-instruct";
-}
-
 // --- ROUTES ---
 
-// Health check — hit this in your browser to confirm the proxy is alive
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "nim-proxy" });
 });
 
-// OpenAI-compatible model list
 app.get("/v1/models", (_req, res) => {
   const data = Object.keys(MODEL_MAP).map((id) => ({
     id,
@@ -64,11 +41,10 @@ app.get("/v1/models", (_req, res) => {
   res.json({ object: "list", data });
 });
 
-// Main endpoint — this is what Janitor AI actually calls
 app.post("/v1/chat/completions", async (req, res) => {
   try {
     const {
-      model = "gpt-4o",
+      model = "GLM 5",
       messages,
       temperature,
       max_tokens,
@@ -84,9 +60,17 @@ app.post("/v1/chat/completions", async (req, res) => {
       });
     }
 
-    const nimModel = MODEL_MAP[model] || resolveFallback(model);
+    const nimModel = MODEL_MAP[model];
 
-    // Build the request body for NVIDIA
+    if (!nimModel) {
+      return res.status(400).json({
+        error: {
+          message: `Unknown model: ${model}. Available models: ${Object.keys(MODEL_MAP).join(", ")}`,
+          type: "invalid_request_error",
+        },
+      });
+    }
+
     const nimBody = {
       model: nimModel,
       messages,
@@ -95,7 +79,6 @@ app.post("/v1/chat/completions", async (req, res) => {
       stream: !!stream,
     };
 
-    // Only add thinking param if enabled (some models support this)
     if (ENABLE_THINKING) {
       nimBody.chat_template_kwargs = { thinking: true };
     }
@@ -109,7 +92,7 @@ app.post("/v1/chat/completions", async (req, res) => {
           "Content-Type": "application/json",
         },
         responseType: stream ? "stream" : "json",
-        timeout: 120000, // 2 min timeout
+        timeout: 120000,
       }
     );
 
@@ -146,12 +129,11 @@ app.post("/v1/chat/completions", async (req, res) => {
             const reasoning = delta.reasoning_content;
             const content = delta.content;
 
-            // Build the output content
             let output = "";
 
             if (SHOW_REASONING && reasoning) {
               if (!inReasoning) {
-                output += "<think>\n";
+                output += "熟虑\n";
                 inReasoning = true;
               }
               output += reasoning;
@@ -159,17 +141,16 @@ app.post("/v1/chat/completions", async (req, res) => {
 
             if (content) {
               if (inReasoning) {
-                output += "\n</think>\n\n";
+                output += "\n---\n\n";
                 inReasoning = false;
               }
               output += content;
             }
 
-            // Only send chunks that have actual content
             if (output) {
               delta.content = output;
             } else if (!content && !reasoning) {
-              // Keep empty deltas for finish_reason signals etc.
+              // Keep empty deltas for finish_reason signals
             } else {
               delta.content = "";
             }
@@ -193,9 +174,9 @@ app.post("/v1/chat/completions", async (req, res) => {
 
       if (SHOW_REASONING && choice.message?.reasoning_content) {
         content =
-          "<think>\n" +
+          "熟虑\n" +
           choice.message.reasoning_content +
-          "\n</think>\n\n" +
+          "\n---\n\n" +
           content;
       }
 
@@ -231,7 +212,6 @@ app.post("/v1/chat/completions", async (req, res) => {
   }
 });
 
-// Everything else → 404
 app.use((_req, res) => {
   res.status(404).json({
     error: { message: "Not found", type: "invalid_request_error", code: 404 },
